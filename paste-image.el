@@ -1,8 +1,8 @@
-;;; paste-image.el --- Paste images from WSL-clipboard via powershell.  -*- lexical-binding: t; -*-
+;;; paste-image.el --- Copying images from and to Linux and WSL.  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2018  Tobias Zawada
 
-;; Author: Tobias Zawada <naehring@smtp.1und1.de>
+;; Author: Tobias Zawada <i@tn-home.de>
 ;; Keywords: unix, multimedia
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,9 @@
 
 ;;; Commentary:
 
-;; 
+;; Copying images from and to the clipboard under Linux and WSL.
+;; This package is in a early experimental stage.
+;; Use it on your own risk.
 
 ;;; Code:
 
@@ -30,8 +32,8 @@
 (defun paste-image-xselect-convert-to-png (_selection type value)
   "Image/png is stored as TYPE image/png with the image data string as VALUE.
 This function just returns VALUE."
-  (when (string-equal (substring value nil 8) ".PNG\x0D\x0A\x1A\x0A")
-      (propertize value 'image-type type)))
+  (when (string-equal (substring value nil 8) "\x89PNG\x0D\x0A\x1A\x0A")
+      (propertize value 'foreign-selection 'image/png 'image-type type)))
 
 (defun paste-image-xselect-convert-to-svg (_selection type value)
   "Image/svg is stored as TYPE image/svg with the image data string as VALUE.
@@ -63,10 +65,6 @@ The function should take the image data as its only argument.")
   (interactive)
   (when-let
       ((data (cond
-	      ((memq system-type '(windows-nt cygwin))
-	       (let ((selection-coding-system 'no-conversion))
-		 (gui-get-selection nil 'image/png)
-		 ))
 	      ((wsl-p)
 	       (when-let* ((default-directory temporary-file-directory)
 			   (tmp-file (make-temp-name (expand-file-name "clipboardImage" wsl-exchange-dir)))
@@ -79,7 +77,11 @@ The function should take the image data as its only argument.")
 		   (set-buffer-file-coding-system 'no-conversion)
 		   (set-buffer-multibyte nil)
 		   (insert-file-contents-literally tmp-file nil nil nil t)
-		   (buffer-string)))))))
+		   (buffer-string))))
+	      ((memq system-type '(windows-nt cygwin gnu/linux))
+	       (let ((selection-coding-system 'no-conversion))
+		 (gui-get-selection nil 'image/png)
+		 )))))
     (funcall paste-image-function data)))
 
 (defun paste-image-to-clipboard (&optional image)
