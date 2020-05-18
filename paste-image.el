@@ -32,7 +32,9 @@
 (defun paste-image-xselect-convert-to-png (_selection type value)
   "Image/png is stored as TYPE image/png with the image data string as VALUE.
 This function just returns VALUE."
-  (when (string-equal (substring value nil 8) "\x89PNG\x0D\x0A\x1A\x0A")
+  (when (and
+	 (>= (length value) 8)
+	 (string-equal (substring value nil 8) "\x89PNG\x0D\x0A\x1A\x0A"))
       (propertize value 'foreign-selection 'image/png 'image-type type)))
 
 (defun paste-image-xselect-convert-to-svg (_selection type value)
